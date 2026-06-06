@@ -71,6 +71,17 @@ async function processRecord(record: SQSRecord): Promise<void> {
     console.error(`Failed to fetch ERP mappings for order ${order.orderId}:`, err);
     await updateOrderPhase(order.orderId, "A0", "ERP mapping fetch failed");
     return;
+
+    /**
+     * Bug: ERP mapping retrieval failures were swallowed by an empty catch block,
+     * allowing processing to continue with an undefined skuMappings value.
+     *
+     * In production this would hide the real ERP failure and later crash when
+     * line items attempted to call .find() on undefined mappings.
+     *
+     * I identified this by running the failing ERP error-handling test and tracing
+     * execution after getSkuMappings() threw an exception.
+     */
   }
 
   // Step 5: Build and create sales order in ERP
