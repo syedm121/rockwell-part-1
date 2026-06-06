@@ -24,6 +24,7 @@ export async function getSkuMappings(): Promise<SkuMapping[]> {
       throw new Error(`ERP API error: ${response.status} ${response.statusText}`);
     }
 
+   
     const data = (await response.json()) as { mappings: SkuMapping[] };
     allMappings.push(...data.mappings);
 

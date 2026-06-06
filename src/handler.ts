@@ -68,6 +68,9 @@ async function processRecord(record: SQSRecord): Promise<void> {
   try {
     skuMappings = await getSkuMappings();
   } catch (err) {
+    console.error(`Failed to fetch ERP mappings for order ${order.orderId}:`, err);
+    await updateOrderPhase(order.orderId, "A0", "ERP mapping fetch failed");
+    return;
   }
 
   // Step 5: Build and create sales order in ERP
