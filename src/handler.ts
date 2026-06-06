@@ -124,9 +124,22 @@ async function processRecord(record: SQSRecord): Promise<void> {
     const erpSalesOrderId = await createSalesOrder(erpOrder);
     console.log(`Created ERP sales order: ${erpSalesOrderId} for order ${order.orderId}`);
 
-    updateOrderPhase(order.orderId, "A1");
+    await updateOrderPhase(order.orderId, "A1");
   } catch (err) {
     console.error(`Failed to create ERP sales order for ${order.orderId}:`, err);
+    /**
+     * Bug: The order phase update after a successful ERP order creation was not
+     * being awaited, allowing the handler to return before the status transition
+     * to A1 had completed.
+     *
+     * In production this could lead to inconsistent order state tracking, where
+     * downstream processes or monitoring systems see the order as incomplete even
+     * though ERP creation succeeded.
+     *
+     * I identified this by running the failing async test, following the successful
+     * ERP creation flow, and noticing that updateOrderPhase("A1") was being called
+     * without awaiting its completion.
+     */
     await updateOrderPhase(order.orderId, "A0", `ERP creation failed: ${(err as Error).message}`);
     return;
   }
